@@ -1,4 +1,5 @@
 import Category from "../models/category.js";
+import Term from "../models/terms.js";
 
 //create controller
 export const create = async (req, res) => {
@@ -52,5 +53,39 @@ export const update = async (req, res) => {
     res.json(updatedCategory);
   } catch (err) {
     res.status(400).json({ error: "Error updating category" });
+  }
+};
+
+///list controller
+export const listByCategory = async (req, res) => {
+  try {
+    const categoryName = req.params.categoryName;
+
+    // Find the category first
+    const category = await Category.findOne({ name: categoryName });
+
+    if (!category) {
+      return res.status(404).json({ error: "Category not found" });
+    }
+
+    // Find all terms linked to that category
+    const terms = await Term.find({ category: category._id }).select({
+      photo: 0,
+    });
+
+    return res.json(terms);
+  } catch (err) {
+    return res
+      .status(500)
+      .json({ error: "Server error", details: err.message });
+  }
+};
+
+export const list = async (req, res) => {
+  try {
+    const categories = await Category.find();
+    res.json(categories);
+  } catch (err) {
+    res.status(400).json({ error: "Error fetching categories" });
   }
 };

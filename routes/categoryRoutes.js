@@ -5,6 +5,8 @@ import {
   read,
   update,
   remove,
+  listByCategory,
+  list,
 } from "../controllers/category.js";
 
 const router = express.Router();
@@ -19,6 +21,13 @@ router.put("/category/:categoryId", update);
 //delete category
 router.delete("/category/:categoryId", remove);
 
+//user routes
+//list categories
+//list categories by category
+router.get("/categories/:categoryName", listByCategory);
+router.get("/categories", list);
+
 router.param("categoryId", categoryById);
+router.param("categoryName", listByCategory);
 
 export default router;

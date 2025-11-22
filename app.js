@@ -1,8 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
 import morgan from "morgan";
-import cors from "cors";
-import mongoose from "mongoose";
 import connectDB from "./config/db.js";
 
 //import routes
@@ -17,7 +15,6 @@ connectDB();
 
 app.use(express.json());
 app.use(morgan("dev"));
-app.use(cors());
 
 //routes middleware
 app.use("/api", termRoutes);
