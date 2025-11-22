@@ -12,6 +12,7 @@ import {
 
 const router = express.Router();
 
+//Admin routes
 //create new term
 router.post("/term/create", create);
 //read term
@@ -20,12 +21,16 @@ router.get("/term/:termId", read);
 router.put("/term/:termId", update);
 //delete term
 router.delete("/term/:termId", remove);
+
+//user routes
 //list products
 router.get("/terms", list);
 //serach terms
 router.get("/terms/search", search);
 //get photo
 router.get("/term/photo/:termId", photo);
+
+
 
 router.param("termId", termById);
 
