@@ -30,8 +30,6 @@ router.get("/terms/search", search);
 //get photo
 router.get("/term/photo/:termId", photo);
 
-
-
 router.param("termId", termById);
 
 export default router;
