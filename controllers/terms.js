@@ -1,5 +1,3 @@
-import formidable from "formidable";
-import fs from "fs";
 import Term from "../models/terms.js";
 import Category from "../models/category.js";
 
@@ -7,43 +5,23 @@ import { errorHandler } from "../Helpers/dbErrorHnadler.js";
 import { normalizeFields } from "../Helpers/normalizeFields.js";
 
 //create controller
-export const create = (req, res) => {
-  const form = formidable({ multiples: false, keepExtensions: true });
+export const create = async (req, res) => {
+  try {
+    // Directly get fields from req.body
+    const flatFields = normalizeFields(req.body);
 
-  form.parse(req, async (err, fields, files) => {
-    if (err) {
-      return res.status(400).json({
-        error: "Image could not be uploaded",
-      });
-    }
+    // Create new Term
+    const term = new Term(flatFields);
 
-    try {
-      // ✅ flatten + cast fields
-      const flatFields = normalizeFields(fields);
+    // Save to DB
+    const result = await term.save();
 
-      let term = new Term(flatFields);
-
-      if (files.photo) {
-        const photo = Array.isArray(files.photo) ? files.photo[0] : files.photo;
-
-        if (photo.size > 1000000) {
-          return res.status(400).json({
-            error: "Image should be less than 1mb in size",
-          });
-        }
-
-        term.photo.data = fs.readFileSync(photo.filepath);
-        term.photo.contentType = photo.mimetype;
-      }
-
-      const result = await term.save();
-      res.json(result);
-    } catch (err) {
-      return res.status(400).json({
-        error: errorHandler ? errorHandler(err) : err.message,
-      });
-    }
-  });
+    res.json(result);
+  } catch (err) {
+    return res.status(400).json({
+      error: errorHandler ? errorHandler(err) : err.message,
+    });
+  }
 };
 
 //term by id controller
@@ -62,42 +40,30 @@ export const termById = async (req, res, next, id) => {
 
 //read controller
 export const read = (req, res) => {
-  req.term.photo = undefined; // Exclude photo data
   return res.json(req.term);
 };
 
 //update controller
-export const update = (req, res) => {
-  const form = formidable({ multiples: false, keepExtensions: true });
-  form.parse(req, async (err, fields, files) => {
-    if (err) {
-      return res.status(400).json({
-        error: "Image could not be uploaded",
-      });
-    }
-    try {
-      // ✅ flatten + cast fields
-      const flatFields = normalizeFields(fields);
-      let term = req.term;
-      term = Object.assign(term, flatFields); // Merge existing product with new fields
-      if (files.photo) {
-        const photo = Array.isArray(files.photo) ? files.photo[0] : files.photo;
-        if (photo.size > 1000000) {
-          return res.status(400).json({
-            error: "Image should be less than 1mb in size",
-          });
-        }
-        term.photo.data = fs.readFileSync(photo.filepath);
-        term.photo.contentType = photo.mimetype;
-      }
-      const result = await term.save();
-      res.json(result);
-    } catch (err) {
-      return res.status(400).json({
-        error: errorHandler ? errorHandler(err) : err.message,
-      });
-    }
-  });
+export const update = async (req, res) => {
+  try {
+    // Flatten fields
+    const flatFields = normalizeFields(req.body);
+
+    // Get existing term from middleware (req.term)
+    let term = req.term;
+
+    // Merge new fields
+    term = Object.assign(term, flatFields);
+
+    // Save updated term
+    const result = await term.save();
+
+    res.json(result);
+  } catch (err) {
+    return res.status(400).json({
+      error: errorHandler ? errorHandler(err) : err.message,
+    });
+  }
 };
 
 //delete controller
@@ -106,7 +72,6 @@ export const remove = async (req, res) => {
     const term = req.term; // this should be a Mongoose document
 
     await term.deleteOne(); // deletes it from the DB
-    term.photo = undefined;
     res.json({
       message: "Term deleted successfully",
     });
@@ -136,12 +101,6 @@ export const list = async (req, res) => {
           preserveNullAndEmptyArrays: true,
         },
       },
-      {
-        $project: {
-          photo: 0, // remove image buffer
-          __v: 0,
-        },
-      },
     ]);
 
     res.json(terms);
@@ -163,9 +122,7 @@ export const search = async (req, res) => {
     const textMatches = await Term.find(
       { $text: { $search: query } },
       { score: { $meta: "textScore" } }
-    )
-      .select({ photo: 0 }) // EXCLUDE PHOTO SAFELY
-      .sort({ score: { $meta: "textScore" } });
+    ).sort({ score: { $meta: "textScore" } });
 
     // ----- 2. Find category matches -----
     const matchedCategories = await Category.find({
@@ -176,7 +133,7 @@ export const search = async (req, res) => {
 
     const categoryMatches = await Term.find({
       category: { $in: categoryIds },
-    }).select({ photo: 0 }); // EXCLUDE PHOTO
+    });
 
     // ----- 3. Combine unique results -----
     const combined = [
@@ -191,12 +148,4 @@ export const search = async (req, res) => {
     console.error(err);
     res.status(500).json({ error: err.message });
   }
-};
-
-export const photo = (req, res, next) => {
-  if (req.term.photo && req.term.photo.data) {
-    res.set("Content-Type", req.term.photo.contentType);
-    return res.send(req.term.photo.data);
-  }
-  next();
 };

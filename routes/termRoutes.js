@@ -7,7 +7,6 @@ import {
   remove,
   list,
   search,
-  photo,
 } from "../controllers/terms.js";
 
 const router = express.Router();
@@ -27,8 +26,6 @@ router.delete("/term/:termId", remove);
 router.get("/terms", list);
 //serach terms
 router.get("/terms/search", search);
-//get photo
-router.get("/term/photo/:termId", photo);
 
 router.param("termId", termById);
 

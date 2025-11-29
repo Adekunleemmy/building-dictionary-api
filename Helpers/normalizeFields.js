@@ -1,25 +1,18 @@
 // helpers/normalizeFields.js
 export const normalizeFields = (fields) => {
-  const flat = {};
+  const flat = { ...fields }; // copy all fields as-is
 
-  for (const key in fields) {
-    // multer form-data often wraps values in arrays
-    let val = Array.isArray(fields[key]) ? fields[key][0] : fields[key];
-
-    // Convert relatedTerms to array
-    if (key === "relatedTerms") {
-      if (Array.isArray(fields[key])) {
-        // form-data supports multiple fields: relatedTerms[]=word
-        val = fields[key];
-      } else if (typeof val === "string") {
-        // comma-separated string: "term1, term2"
-        val = val.split(",").map((item) => item.trim());
-      } else {
-        val = [];
-      }
+  // Ensure relatedTerms is always an array
+  if (flat.relatedTerms) {
+    if (Array.isArray(flat.relatedTerms)) {
+      flat.relatedTerms = flat.relatedTerms.map((item) => item.trim());
+    } else if (typeof flat.relatedTerms === "string") {
+      flat.relatedTerms = flat.relatedTerms
+        .split(",")
+        .map((item) => item.trim());
+    } else {
+      flat.relatedTerms = [];
     }
-
-    flat[key] = val;
   }
 
   return flat;

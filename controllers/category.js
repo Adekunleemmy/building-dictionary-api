@@ -69,9 +69,7 @@ export const listByCategory = async (req, res) => {
     }
 
     // Find all terms linked to that category
-    const terms = await Term.find({ category: category._id }).select({
-      photo: 0,
-    });
+    const terms = await Term.find({ category: category._id });
 
     return res.json(terms);
   } catch (err) {
