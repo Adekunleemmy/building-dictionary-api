@@ -1,3 +1,4 @@
+import Fuse from "fuse.js";
 import Term from "../models/terms.js";
 import Category from "../models/category.js";
 
@@ -118,32 +119,70 @@ export const search = async (req, res) => {
       return res.status(400).json({ message: "Search query is required" });
     }
 
-    // ----- 1. Text search across fields -----
-    const textMatches = await Term.find(
-      { $text: { $search: query } },
-      { score: { $meta: "textScore" } }
-    ).sort({ score: { $meta: "textScore" } });
+    const searchText = query.trim();
 
-    // ----- 2. Find category matches -----
+    // -------------------------------------------
+    // 1. CATEGORY NAME MATCHES → TOP PRIORITY
+    // -------------------------------------------
     const matchedCategories = await Category.find({
-      name: { $regex: query, $options: "i" },
+      name: { $regex: searchText, $options: "i" },
     });
 
-    const categoryIds = matchedCategories.map((cat) => cat._id);
+    const categoryIds = matchedCategories.map((c) => c._id);
 
     const categoryMatches = await Term.find({
       category: { $in: categoryIds },
     });
 
-    // ----- 3. Combine unique results -----
-    const combined = [
+    // -------------------------------------------
+    // 2. EXACT TERM NAME MATCHES
+    // -------------------------------------------
+    const exactMatches = await Term.find({
+      name: { $regex: `^${searchText}$`, $options: "i" },
+    });
+
+    // -------------------------------------------
+    // 3. FUZZY SEARCH on name/definition (via Fuse)
+    // -------------------------------------------
+    const allTerms = await Term.find();
+
+    const fuse = new Fuse(allTerms, {
+      keys: ["name", "definition"],
+      threshold: 0.35, // how fuzzy (lower = stricter)
+    });
+
+    const fuzzyMatches = fuse.search(searchText).map((result) => result.item);
+
+    // -------------------------------------------
+    // 4. TEXT SEARCH (MongoDB text index)
+    // -------------------------------------------
+    const textMatches = await Term.find(
+      { $text: { $search: searchText } },
+      { score: { $meta: "textScore" } }
+    ).sort({ score: { $meta: "textScore" } });
+
+    // -------------------------------------------
+    // 5. COMBINE RESULTS BY PRIORITY
+    // -------------------------------------------
+    const allResults = [
+      ...categoryMatches,
+      ...exactMatches,
+      ...fuzzyMatches,
       ...textMatches,
-      ...categoryMatches.filter(
-        (term) => !textMatches.some((t) => t._id.equals(term._id))
-      ),
     ];
 
-    res.json(combined);
+    // Deduplicate by ID
+    const unique = [];
+    const seen = new Set();
+
+    for (const item of allResults) {
+      if (!seen.has(item._id.toString())) {
+        seen.add(item._id.toString());
+        unique.push(item);
+      }
+    }
+
+    res.json(unique);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
