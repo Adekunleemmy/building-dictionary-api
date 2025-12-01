@@ -1,12 +1,12 @@
 import express from "express";
 import dotenv from "dotenv";
 import morgan from "morgan";
+import cors from "cors";
 import connectDB from "./config/db.js";
 
 //import routes
 import termRoutes from "./routes/termRoutes.js";
 import categoryRoutes from "./routes/categoryRoutes.js";
-// import categoryRoutes from "./routes/categoryRoutes.js";
 
 dotenv.config();
 const app = express();
@@ -14,12 +14,12 @@ const app = express();
 connectDB();
 
 app.use(express.json());
+app.use(cors());
 app.use(morgan("dev"));
 
 //routes middleware
 app.use("/api", termRoutes);
 app.use("/api", categoryRoutes);
-// app.use("/api/categories", categoryRoutes);
 
 const PORT = process.env.PORT || 5000;
 
