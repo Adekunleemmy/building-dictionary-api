@@ -7,8 +7,7 @@ const TermSchema = new mongoose.Schema(
     definition: { type: String, required: true },
     usage: { type: String, required: true },
     category: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Category",
+      type: String,
       required: true,
     },
     relatedTerms: { type: [String], default: [] },
