@@ -86,23 +86,7 @@ export const list = async (req, res) => {
   try {
     const limit = 30; // number of terms to return
 
-    const terms = await Term.aggregate([
-      { $sample: { size: limit } }, // random items
-      {
-        $lookup: {
-          from: "categories",
-          localField: "category",
-          foreignField: "_id",
-          as: "category",
-        },
-      },
-      {
-        $unwind: {
-          path: "$category",
-          preserveNullAndEmptyArrays: true,
-        },
-      },
-    ]);
+    const terms = await Term.find().limit(limit);
 
     res.json(terms);
   } catch (err) {
