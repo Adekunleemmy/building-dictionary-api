@@ -84,7 +84,7 @@ export const remove = async (req, res) => {
 //list controller (gets random terms and max of 30)
 export const list = async (req, res) => {
   try {
-    const limit = 30; // number of terms to return
+    const limit = 100; // number of terms to return
 
     const terms = await Term.find().limit(limit);
 
