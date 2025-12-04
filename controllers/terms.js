@@ -84,25 +84,13 @@ export const remove = async (req, res) => {
 //list controller (gets random terms and max of 30)
 export const list = async (req, res) => {
   try {
-    const limit = 30; // number of terms to return
+    const limit = parseInt(req.query.limit, 10) || 100; // allow override via ?limit=
 
-    const terms = await Term.aggregate([
-      { $sample: { size: limit } }, // random items
-      {
-        $lookup: {
-          from: "categories",
-          localField: "category",
-          foreignField: "_id",
-          as: "category",
-        },
-      },
-      {
-        $unwind: {
-          path: "$category",
-          preserveNullAndEmptyArrays: true,
-        },
-      },
-    ]);
+    // Use MongoDB aggregation $sample to get random documents
+    const count = await Term.countDocuments();
+    const sampleSize = Math.min(limit, count);
+
+    const terms = sampleSize > 0 ? await Term.aggregate([{ $sample: { size: sampleSize } }]) : [];
 
     res.json(terms);
   } catch (err) {
