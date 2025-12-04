@@ -55,12 +55,19 @@ export const remove = async (req, res) => {
 
 //update controller
 export const update = async (req, res) => {
-  const category = req.category;
-  category.name = req.body.name;
   try {
+    const category = req.category; // Loaded by param middleware
+
+    // Update fields ONLY if provided in req.body
+    if (req.body.name !== undefined) category.name = req.body.name;
+    if (req.body.description !== undefined)
+      category.description = req.body.description;
+    if (req.body.image !== undefined) category.image = req.body.image;
+
     const updatedCategory = await category.save();
     res.json(updatedCategory);
   } catch (err) {
+    console.error(err);
     res.status(400).json({ error: "Error updating category" });
   }
 };

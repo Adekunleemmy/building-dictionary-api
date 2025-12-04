@@ -90,7 +90,10 @@ export const list = async (req, res) => {
     const count = await Term.countDocuments();
     const sampleSize = Math.min(limit, count);
 
-    const terms = sampleSize > 0 ? await Term.aggregate([{ $sample: { size: sampleSize } }]) : [];
+    const terms =
+      sampleSize > 0
+        ? await Term.aggregate([{ $sample: { size: sampleSize } }])
+        : [];
 
     res.json(terms);
   } catch (err) {
