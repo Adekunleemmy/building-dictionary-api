@@ -3,10 +3,19 @@ import Term from "../models/terms.js";
 
 //create controller
 export const create = async (req, res) => {
-  const category = new Category(req.body);
   try {
-    const savedCategory = await category.save();
-    res.status(201).json(savedCategory);
+    let response;
+
+    if (Array.isArray(req.body)) {
+      // Insert many at once
+      response = await Category.insertMany(req.body);
+    } else {
+      // Insert one
+      const category = new Category(req.body);
+      response = await category.save();
+    }
+
+    res.json(response);
   } catch (err) {
     res.status(400).json({ error: "Error saving category" });
   }
