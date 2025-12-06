@@ -156,10 +156,18 @@ export const search = async (req, res) => {
     ).sort({ score: { $meta: "textScore" } });
 
     // -------------------------------------------
+    // 2b. TERMS THAT START WITH THE QUERY
+    // -------------------------------------------
+    const startsWithMatches = await Term.find({
+      name: { $regex: `^${searchText}`, $options: "i" },
+    });
+
+    // -------------------------------------------
     // 5. COMBINE RESULTS BY PRIORITY
     // -------------------------------------------
     const allResults = [
       ...exactMatches,
+      ...startsWithMatches,
       ...categoryMatches,
       ...fuzzyMatches,
       ...textMatches,
