@@ -95,10 +95,7 @@ export const list = async (req, res) => {
 
     const terms =
       sampleSize > 0
-        ? await Term.aggregate([
-            { $match: { _id: { $nin: exclude } } },
-            { $sample: { size: sampleSize } },
-          ])
+        ? await Term.aggregate([{ $sample: { size: sampleSize } }])
         : [];
 
     res.json(terms);
@@ -162,8 +159,8 @@ export const search = async (req, res) => {
     // 5. COMBINE RESULTS BY PRIORITY
     // -------------------------------------------
     const allResults = [
-      ...categoryMatches,
       ...exactMatches,
+      ...categoryMatches,
       ...fuzzyMatches,
       ...textMatches,
     ];
