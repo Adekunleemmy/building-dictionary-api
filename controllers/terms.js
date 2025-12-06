@@ -81,16 +81,25 @@ export const remove = async (req, res) => {
   }
 };
 
-//list controller (gets random terms and max of 30)
+//list controller (gets random terms and max of 100)
 export const list = async (req, res) => {
   try {
-    const limit = parseInt(req.query.limit, 10) || 100; // allow override via ?limit=
+    const limit = parseInt(req.query.limit, 10) || 100;
 
-    // Use MongoDB aggregation $sample to get random documents
-    const count = await Term.countDocuments();
+    // Get excluded IDs from query
+    const exclude = req.query.exclude ? req.query.exclude.split(",") : [];
+
+    const count = await Term.countDocuments({ _id: { $nin: exclude } });
+
     const sampleSize = Math.min(limit, count);
 
-    const terms = sampleSize > 0 ? await Term.aggregate([{ $sample: { size: sampleSize } }]) : [];
+    const terms =
+      sampleSize > 0
+        ? await Term.aggregate([
+            { $match: { _id: { $nin: exclude } } },
+            { $sample: { size: sampleSize } },
+          ])
+        : [];
 
     res.json(terms);
   } catch (err) {
